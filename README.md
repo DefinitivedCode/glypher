@@ -1,8 +1,29 @@
-# Glypher
+<div align="center">
 
-An interactive, full-screen canvas of Korean, Japanese and Traditional Chinese glyphs. Drop in an image or an animated GIF and it is rebuilt out of characters. Everything runs in your browser, so your images never leave your device.
+<img src="assets/banner.png" alt="Glypher: turn images and GIFs into interactive Korean, Japanese and Chinese glyph art" width="100%">
 
-**Live:** https://glyph.masonmau.com
+<br>
+
+[![CI](https://img.shields.io/github/actions/workflow/status/DefinitivedCode/glypher/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/DefinitivedCode/glypher/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/DefinitivedCode/glypher?style=flat-square&color=2ea043)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/DefinitivedCode/glypher?style=flat-square&color=e3b341)](https://github.com/DefinitivedCode/glypher/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/DefinitivedCode/glypher?style=flat-square)](https://github.com/DefinitivedCode/glypher/commits/main)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-0a84ff?style=flat-square)](CONTRIBUTING.md)
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?style=flat-square&logo=typescript&logoColor=white)
+![WebGL2](https://img.shields.io/badge/WebGL2-990000?style=flat-square&logo=webgl&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646cff?style=flat-square&logo=vite&logoColor=white)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-f38020?style=flat-square&logo=cloudflare&logoColor=white)
+
+**An interactive, full-screen canvas of Korean, Japanese and Traditional Chinese glyphs.**<br>
+Drop in an image or an animated GIF and it is rebuilt out of characters.<br>
+Everything runs in your browser, so your images never leave your device.
+
+### [Open the live app](https://glyph.masonmau.com)
+
+[Features](#features) · [Quick start](#quick-start) · [Run locally](#run-it-locally) · [How it works](#how-it-works) · [Deploy](#deploy) · [Contributing](CONTRIBUTING.md)
+
+</div>
 
 ## Features
 
@@ -88,10 +109,12 @@ npm run deploy
 
 To host it yourself, change or remove `routes` in `wrangler.json`. With several Cloudflare accounts, set `CLOUDFLARE_ACCOUNT_ID`. Caching and security headers live in `public/_headers`. Any static host also works: upload `dist/`.
 
-## Contributing
+---
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+<div align="center">
 
-## License
+**[MIT License](LICENSE)** · Contributions are welcome, see **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
-[MIT](LICENSE)
+Made by [DefinitivedCode](https://github.com/DefinitivedCode) · [glyph.masonmau.com](https://glyph.masonmau.com)
+
+</div>
