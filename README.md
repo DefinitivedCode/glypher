@@ -46,9 +46,14 @@ Press **Ctrl/Cmd + K** to open the panel, then drop, paste or pick an image.
 | Ctrl/Cmd + K | Open or close the panel |
 | Esc | Close the panel |
 | Ctrl/Cmd + V | Paste an image from the clipboard |
+| Scroll wheel or trackpad pinch | Zoom in toward the cursor (1x is the full canvas) |
+| Drag | Pan around when zoomed in |
+| Double-click | Zoom in, or reset to the full canvas |
 
 ### Tips
 
+- Prefer no image? Type some text into the box under the drop area and it appears at the center in glyphs.
+- Your last five images appear under **Recent** for one-click reuse.
 - For the most detail, lower **Glyph size**, raise **Sharpen**, and set **Glyphs** to *Density*. *Mixed* looks more varied, and *Random* leaves all the detail to brightness.
 - **Fit canvas** and **Fill canvas** scale the image to the screen.
 - With an image loaded, **Export PNG** renders at the image's own size, independent of your screen.
@@ -95,6 +100,7 @@ The CPU does almost no per-glyph work per frame. Glyphs are rasterised once into
 
 ## Troubleshooting
 
+- **Page looks white or unstyled**: your browser likely cached an older copy. Hard refresh (Ctrl/Cmd + Shift + R).
 - **"WebGL2 is required"**: enable hardware acceleration in your browser settings, or try another browser.
 - **GIF shows one frame**: use a Chromium-based browser (see Requirements).
 - **Choppy on an old device**: lower **Quality** or raise the glyph size; Auto does this for you.
