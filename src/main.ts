@@ -4,7 +4,8 @@ import { activeGlyphs, makeAtlas, type Atlas } from './glyphs';
 import { sampleImage, prepTones } from './image';
 import { Renderer, type Frame } from './renderer';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
-import { initUI, sync, toast, imageShown, setAnimated } from './ui';
+import { initUI, sync, toast, imageShown, setAnimated, showRecent } from './ui';
+import { addRecent, listRecent, clearRecent, type RecentItem } from './recent';
 
 const cv = document.getElementById('bg') as HTMLCanvasElement;
 let renderer: Renderer;
@@ -151,6 +152,7 @@ async function loadFile(file: File) {
     }
     if (thumbUrl) URL.revokeObjectURL(thumbUrl); thumbUrl = URL.createObjectURL(file);
     imageShown(file.name || 'Pasted image', thumbUrl); setAnimated(!!gif); rebuild();
+    addRecent(file).then(refreshRecent);
   } catch { toast('Could not read that image'); }
 }
 /* ---------------------------------------------------------------- export */
@@ -194,6 +196,11 @@ async function exportGif() {
     enc.finish(); ex.dispose(); save_blob(new Blob([enc.bytes()], { type: 'image/gif' }), 'gif'); toast(`Exported ${ex.EW} x ${ex.EH} GIF`);
   } catch { toast('GIF export failed'); } finally { encoding = false; }
 }
+let recent: RecentItem[] = [];
+async function refreshRecent() {
+  recent = await listRecent();
+  showRecent(recent, id => { const r = recent.find(x => x.id === id); if (r) loadFile(new File([r.blob], r.name, { type: r.type })); }, async () => { await clearRecent(); refreshRecent(); });
+}
 initUI({
   change: kind => { if (kind === 'quality') { qEff = 4; qCeil = 5; resize(); } else rebuild(); }, file: loadFile, saveGif: exportGif,
   fit(mode) {
@@ -210,4 +217,4 @@ initUI({
   },
 });
 let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = window.setTimeout(resize, 120); });
-resize(); requestAnimationFrame(frame);
+resize(); requestAnimationFrame(frame); refreshRecent();

@@ -77,3 +77,11 @@ input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .btn[hidden]{display:none}
+
+.group>h2 .link{float:right;background:none;border:0;padding:0;color:var(--muted);font:500 11px var(--font);letter-spacing:0;text-transform:none;cursor:pointer}
+.group>h2 .link:hover{color:var(--text)}
+.recent{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.recent button{padding:0;aspect-ratio:1;overflow:hidden;border:1px solid var(--line);border-radius:9px;background:var(--bg);cursor:pointer;transition:border-color .15s,transform .15s}
+.recent button:hover{border-color:rgba(255,255,255,.3);transform:translateY(-1px)}
+.recent button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.recent img{display:block;width:100%;height:100%;object-fit:cover}

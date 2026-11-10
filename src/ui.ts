@@ -56,6 +56,19 @@ export function openPanel(force?: boolean) {
   const open = force === undefined ? !panel.classList.contains('open') : force;
   panel.classList.toggle('open', open); panel.setAttribute('aria-hidden', String(!open)); hint.classList.toggle('hide', open);
 }
+let recentUrls: string[] = [];
+/** Render the Recent thumbnails; hidden when there are none. */
+export function showRecent(items: { id: number; name: string; blob: Blob }[], pick: (id: number) => void, clear: () => void) {
+  recentUrls.forEach(URL.revokeObjectURL); recentUrls = [];
+  const grid = $('recentGrid'); grid.replaceChildren();
+  $('recent').hidden = !items.length;
+  for (const it of items) {
+    const b = el('<button type="button"><img alt=""></button>') as HTMLButtonElement, url = URL.createObjectURL(it.blob);
+    recentUrls.push(url); (b.firstElementChild as HTMLImageElement).src = url; b.title = it.name; b.setAttribute('aria-label', `Use ${it.name}`);
+    b.onclick = () => pick(it.id); grid.append(b);
+  }
+  ($('clearRecent') as HTMLButtonElement).onclick = clear;
+}
 export const setAnimated = (on: boolean) => { ($('saveGif') as HTMLButtonElement).hidden = !on; };
 export const imageShown = (name: string | null, url?: string) => {
   $('thumb').classList.toggle('show', !!name); $('drop').style.display = name ? 'none' : '';
