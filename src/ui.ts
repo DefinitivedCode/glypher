@@ -2,7 +2,7 @@ import { S, persist } from './settings';
 
 type Kind = 'glyphs' | 'grid' | 'image' | 'quality' | undefined;
 export interface UIHooks {
-  fit(mode: 'fit' | 'fill'): void; saveGif(): void; change(kind: Kind): void; file(f: File): void; clear(): void; reset(): void; save(): void;
+  text(s: string): void; fit(mode: 'fit' | 'fill'): void; saveGif(): void; change(kind: Kind): void; file(f: File): void; clear(): void; reset(): void; save(): void;
 }
 const $ = (id: string) => document.getElementById(id)!;
 const el = (h: string) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild as HTMLElement; };
@@ -69,6 +69,7 @@ export function showRecent(items: { id: number; name: string; blob: Blob }[], pi
   }
   ($('clearRecent') as HTMLButtonElement).onclick = clear;
 }
+export const clearTextInput = () => { ($('textIn') as HTMLInputElement).value = ''; };
 export const setAnimated = (on: boolean) => { ($('saveGif') as HTMLButtonElement).hidden = !on; };
 export const imageShown = (name: string | null, url?: string) => {
   $('thumb').classList.toggle('show', !!name); $('drop').style.display = name ? 'none' : '';
@@ -123,6 +124,8 @@ export function initUI(h: UIHooks) {
   }
   sync();
 
+  const ti = $('textIn') as HTMLInputElement; let tt = 0;
+  ti.oninput = () => { clearTimeout(tt); tt = window.setTimeout(() => h.text(ti.value.trim()), 180); };
   // image input: picker, drag and drop, paste
   const file = $('file') as HTMLInputElement;
   $('drop').onclick = () => file.click();

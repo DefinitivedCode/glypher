@@ -9,7 +9,7 @@ const VS = `#version 300 es
 precision highp float; precision highp int;
 layout(location=0) in vec4 aG;   // home glyph, previous home glyph, tone, previous tone
 layout(location=1) in vec3 aCol; // per-cell colour; r < 0 means "use base colour"
-uniform vec2 uRes, uCell, uOff, uGrid, uAtlas, uSweep; uniform int uCols;
+uniform vec3 uView; uniform vec2 uRes, uCell, uOff, uGrid, uAtlas, uSweep; uniform int uCols;
 uniform float uWave, uTime, uTile, uDpr, uCount, uAtlasCols, uTilePx, uDrift, uMorph, uRadius, uPush, uHover;
 uniform vec3 uTrail[12]; uniform vec4 uRip[4]; uniform vec3 uBase;
 out vec2 vA, vB, vH; out vec3 vM; out vec3 vCol; out float vTone;
@@ -21,7 +21,8 @@ vec2 tileUV(float g, vec2 c){ return (vec2(mod(g,uAtlasCols), floor(g/uAtlasCols
 void main(){
   uint id = uint(gl_InstanceID);
   vec2 cell = vec2(float(gl_InstanceID % uCols), float(gl_InstanceID / uCols));
-  vec2 c = floor((uOff + cell*uCell)*uDpr + 0.5)/uDpr;
+  vec2 cw0 = floor((uOff + cell*uCell)*uDpr + 0.5)/uDpr;
+  vec2 c = (cw0 - uView.xy)*uView.z + uRes*.5;   // world -> screen (zoom + pan)
   float heat = 0.; vec2 push = vec2(0.);
 
   if (uHover > .5) for (int i=0;i<12;i++){
@@ -47,7 +48,7 @@ void main(){
   float gH = floor(h2(id,uint(he)+500000u)*uCount);
 
   vec2 corner = vec2(float(gl_VertexID&1), float(gl_VertexID>>1));
-  vec2 p = c + push + (corner-.5)*uTile;
+  vec2 p = c + push + (corner-.5)*uTile*uView.z;
   gl_Position = vec4(p.x/uRes.x*2.-1., 1.-p.y/uRes.y*2., 0., 1.);
   vA = tileUV(gA,corner); vB = tileUV(gB,corner); vH = tileUV(gH,corner);
   vM = vec3(mb, smoothstep(.05,.25,heat), heat);
@@ -68,7 +69,7 @@ void main(){
 export interface Frame {
   time: number; cols: number; rows: number; cw: number; ch: number; offX: number; offY: number;
   drift: boolean; morph: number; radius: number; push: boolean; hover: boolean;
-  wave: number; trail: Float32Array; rip: Float32Array; sweep: [number, number];
+  view: [number, number, number]; wave: number; trail: Float32Array; rip: Float32Array; sweep: [number, number];
   base: [number, number, number]; hi: [number, number, number];
 }
 
@@ -132,7 +133,7 @@ export class Renderer {
     gl.uniform1i(this.u('uCols'), f.cols); gl.uniform1i(this.u('uTex'), 0);
     gl.uniform1f(this.u('uTime'), f.time); gl.uniform1f(this.u('uTile'), a.tileCss); gl.uniform1f(this.u('uDpr'), this.dpr);
     gl.uniform1f(this.u('uCount'), this.glyphCount); gl.uniform1f(this.u('uAtlasCols'), a.cols); gl.uniform1f(this.u('uTilePx'), a.tilePx);
-    gl.uniform1f(this.u('uWave'), f.wave); gl.uniform1f(this.u('uDrift'), f.drift ? 1 : 0); gl.uniform1f(this.u('uMorph'), f.morph); gl.uniform1f(this.u('uRadius'), f.radius);
+    gl.uniform3f(this.u('uView'), ...f.view); gl.uniform1f(this.u('uWave'), f.wave); gl.uniform1f(this.u('uDrift'), f.drift ? 1 : 0); gl.uniform1f(this.u('uMorph'), f.morph); gl.uniform1f(this.u('uRadius'), f.radius);
     gl.uniform1f(this.u('uPush'), f.push ? 1 : 0); gl.uniform1f(this.u('uHover'), f.hover ? 1 : 0);
     gl.uniform3fv(this.u('uTrail[0]'), f.trail); gl.uniform4fv(this.u('uRip[0]'), f.rip);
     gl.uniform3f(this.u('uBase'), ...f.base); gl.uniform3f(this.u('uHi'), ...f.hi);

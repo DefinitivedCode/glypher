@@ -29,22 +29,35 @@ export const activeGlyphs = () => {
   return g;
 };
 
-/** Rasterise every glyph once into a texture atlas; ink coverage is measured from the same pixels. */
-export function makeAtlas(glyphs: string[], fs: number, dpr: number, tileCap = 64): Atlas {
-  const tileDev = Math.ceil(fs * dpr * 1.25), tilePx = Math.min(tileDev, tileCap), k = tilePx / tileDev;
+const orderCache = new Map<string, number[]>();
+
+/**
+ * Rasterise every glyph once into a texture atlas. `rs` rasterises at a higher resolution (used when zoomed in)
+ * without changing the on-screen quad size. The ink-density order is measured once per glyph set and cached,
+ * so re-rasterising never reshuffles which glyph represents which tone.
+ */
+export function makeAtlas(glyphs: string[], fs: number, dpr: number, tileCap = 64, rs = 1): Atlas {
+  const base = Math.ceil(fs * dpr * 1.25), tileDev = Math.ceil(fs * dpr * rs * 1.25);
+  const fit = Math.floor(4096 / Math.ceil(Math.sqrt(glyphs.length)));
+  const tilePx = Math.max(8, Math.min(tileDev, tileCap, fit)), k = tilePx / tileDev;
   const cols = Math.floor(4096 / tilePx), rows = Math.ceil(glyphs.length / cols);
   const canvas = document.createElement('canvas');
   canvas.width = cols * tilePx; canvas.height = rows * tilePx;
   const x = canvas.getContext('2d', { willReadFrequently: true })!;
-  x.font = `${S.weight} ${fs * dpr * k}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff';
+  x.font = `${S.weight} ${fs * dpr * rs * k}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff';
   glyphs.forEach((g, i) => x.fillText(g, (i % cols) * tilePx + tilePx / 2, Math.floor(i / cols) * tilePx + tilePx / 2));
 
-  const d = x.getImageData(0, 0, canvas.width, canvas.height).data, ink = new Float32Array(glyphs.length);
-  for (let i = 0; i < glyphs.length; i++) {
-    const ox = (i % cols) * tilePx, oy = Math.floor(i / cols) * tilePx; let sum = 0;
-    for (let y = 0; y < tilePx; y++) for (let xx = 0; xx < tilePx; xx++) sum += d[((oy + y) * canvas.width + ox + xx) * 4 + 3];
-    ink[i] = sum;
+  const key = S.weight + glyphs.join('');
+  let order = orderCache.get(key);
+  if (!order) {
+    const d = x.getImageData(0, 0, canvas.width, canvas.height).data, ink = new Float32Array(glyphs.length);
+    for (let i = 0; i < glyphs.length; i++) {
+      const ox = (i % cols) * tilePx, oy = Math.floor(i / cols) * tilePx; let sum = 0;
+      for (let y = 0; y < tilePx; y++) for (let xx = 0; xx < tilePx; xx++) sum += d[((oy + y) * canvas.width + ox + xx) * 4 + 3];
+      ink[i] = sum;
+    }
+    order = Array.from({ length: glyphs.length }, (_, i) => i).sort((p, q) => ink[p] - ink[q]);
+    orderCache.set(key, order);
   }
-  const order = Array.from({ length: glyphs.length }, (_, i) => i).sort((a, b) => ink[a] - ink[b]);
-  return { canvas, glyphs, order, cols, tilePx, tileCss: tileDev / dpr };
+  return { canvas, glyphs, order, cols, tilePx, tileCss: base / dpr };
 }

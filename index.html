@@ -36,6 +36,7 @@
     <div class="thumb" id="thumb"><img id="thumbImg" alt=""><span id="thumbName"></span>
       <button class="btn icon" id="clearImg" aria-label="Remove image"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
     </div>
+    <input class="text" id="textIn" type="text" maxlength="40" placeholder="Or type some text" aria-label="Text to turn into glyphs" autocomplete="off" spellcheck="false">
     <section class="group" id="recent" hidden>
       <h2>Recent <button class="link" id="clearRecent" type="button">Clear</button></h2>
       <div class="recent" id="recentGrid"></div>
@@ -48,6 +49,7 @@
     <button class="btn" id="save"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Export PNG</button>
   </div>
 </aside>
+<button class="zoom" id="zoomPill" type="button" hidden aria-label="Reset zoom">1.0x</button>
 <div class="toast" id="toast"></div>
 <script type="module" src="/src/main.ts"></script>
 </body>

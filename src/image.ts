@@ -19,7 +19,7 @@ export function prepTones(d: Uint8ClampedArray, cols: number, rows: number) {
     const hist = new Uint32Array(256); for (const i of ins) hist[Math.min(255, (L[i] * 255) | 0)]++;
     const pct = (p: number) => { let acc = 0; for (let b = 0; b < 256; b++) { acc += hist[b]; if (acc >= ins.length * p) return b / 255; } return 1; };
     const lo = pct(0.02), hi = pct(0.98), rg = Math.max(0.08, hi - lo);
-    for (const i of ins) L[i] = Math.min(1, Math.max(0, (L[i] - lo) / rg));
+    if (hi - lo > 0.05) for (const i of ins) L[i] = Math.min(1, Math.max(0, (L[i] - lo) / rg));   // skip flat images such as text
   }
   const O = L.slice();
   if (S.sharpen > 0) for (const i of ins) {

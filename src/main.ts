@@ -1,10 +1,10 @@
 import './style.css';
 import { S, persist, resetSettings, reduced } from './settings';
-import { activeGlyphs, makeAtlas, type Atlas } from './glyphs';
+import { activeGlyphs, makeAtlas, FONT, type Atlas } from './glyphs';
 import { sampleImage, prepTones } from './image';
 import { Renderer, type Frame } from './renderer';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
-import { initUI, sync, toast, imageShown, setAnimated, showRecent } from './ui';
+import { initUI, sync, toast, imageShown, setAnimated, showRecent, clearTextInput } from './ui';
 import { addRecent, listRecent, clearRecent, type RecentItem } from './recent';
 
 const cv = document.getElementById('bg') as HTMLCanvasElement;
@@ -16,7 +16,7 @@ let W = 0, H = 0, dpr = 1, cols = 0, rows = 0, N = 0, cw = 0, ch = 0, offX = 0, 
 const Q = [null, { dpr: 1, cells: 8000, tile: 32 }, { dpr: 1, cells: 20000, tile: 48 }, { dpr: 1.5, cells: 40000, tile: 64 }, { dpr: 2, cells: 60000, tile: 64 }, { dpr: 3, cells: 100000, tile: 96 }];
 let qEff = 4, qCeil = 5;
 const lvl = () => S.quality || qEff;
-let atlas: Atlas, atlasKey = '', setsKey = '';
+let atlas: Atlas, atlasKey = '', setsKey = '', rs = 1, textMode = false;
 let gif: { frames: ImageBitmap[]; delays: number[]; i: number; next: number } | null = null;
 let img: ImageBitmap | null = null;
 let prevHome: Float32Array = new Float32Array(0), prevTone: Float32Array = new Float32Array(0), morphStart = -1e9;
@@ -58,8 +58,8 @@ function buildScene(Wv: number, Hv: number, fsv: number, at: Atlas, scale: numbe
 
 function rebuild() {
   fs = S.size;
-  const sk = JSON.stringify(S.sets) + S.weight, ak = `${sk}|${fs}|${dpr}|${Q[lvl()]!.tile}`;
-  if (ak !== atlasKey) { atlas = makeAtlas(activeGlyphs(), fs, dpr, Q[lvl()]!.tile); renderer.setAtlas(atlas); atlasKey = ak; }
+  const sk = JSON.stringify(S.sets) + S.weight, ak = `${sk}|${fs}|${dpr}|${Q[lvl()]!.tile}|${rs}`;
+  if (ak !== atlasKey) { atlas = makeAtlas(activeGlyphs(), fs, dpr, Q[lvl()]!.tile, rs); renderer.setAtlas(atlas); atlasKey = ak; }
   const sameSets = sk === setsKey; setsKey = sk;
   const sc = buildScene(W, H, fs, atlas, S.scale, sameSets ? { home: prevHome, tone: prevTone } : null, img);
   ({ cols, rows, N, cw, ch, offX, offY } = sc); prevHome = sc.home; prevTone = sc.tone;
@@ -69,7 +69,7 @@ function rebuild() {
 
 function resize() {
   dpr = Math.min(devicePixelRatio || 1, Q[lvl()]!.dpr); W = innerWidth; H = innerHeight;
-  renderer.resize(W, H, dpr); prevHome = new Float32Array(0); rebuild();
+  renderer.resize(W, H, dpr); prevHome = new Float32Array(0); resetView(); rs = 1; rebuild();
 }
 
 /* ---------------------------------------------------------------- input */
@@ -78,8 +78,44 @@ const trail: { x: number; y: number; t: number }[] = []; let lastSample = 0;
 const ripples: { x: number; y: number; t: number }[] = [];
 const onPanel = (t: EventTarget | null) => t instanceof Element && !!t.closest('.panel');
 addEventListener('pointermove', e => { if (onPanel(e.target)) { ptr.on = false; return; } ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = true; });
-addEventListener('pointerdown', e => { if (e.target !== cv) return; ptr.down = true; if (S.ripple) { ripples.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (ripples.length > 4) ripples.shift(); } });
-addEventListener('pointerup', () => ptr.down = false);
+/* Zoom is in-only: 1x is the whole canvas, you can zoom in and pan but never out past it. */
+const MAXZ = 6, view = { z: 1, cx: 0, cy: 0 }, tgt = { z: 1, cx: 0, cy: 0 };
+const clampView = (v: { z: number; cx: number; cy: number }) => {
+  v.z = Math.min(MAXZ, Math.max(1, v.z)); const hw = W / (2 * v.z), hh = H / (2 * v.z);
+  v.cx = Math.min(W - hw, Math.max(hw, v.cx)); v.cy = Math.min(H - hh, Math.max(hh, v.cy));
+};
+function resetView() { view.z = tgt.z = 1; view.cx = tgt.cx = W / 2; view.cy = tgt.cy = H / 2; }
+function zoomAt(sx: number, sy: number, factor: number) {            // keeps the point under the cursor fixed
+  const nz = Math.min(MAXZ, Math.max(1, tgt.z * factor)), wx = (sx - W / 2) / tgt.z + tgt.cx, wy = (sy - H / 2) / tgt.z + tgt.cy;
+  tgt.cx = wx - (sx - W / 2) / nz; tgt.cy = wy - (sy - H / 2) / nz; tgt.z = nz; clampView(tgt);
+}
+let drag: { x: number; y: number; moved: number } | null = null, zoomedAt = 0;
+addEventListener('pointerdown', e => { if (e.target !== cv) return; ptr.down = true; drag = { x: e.clientX, y: e.clientY, moved: 0 }; });
+addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+  if (view.z > 1.001 && drag.moved > 3) {                              // pan: move the camera 1:1 with the pointer
+    for (const v of [view, tgt]) { v.cx -= dx / view.z; v.cy -= dy / view.z; clampView(v); }
+  }
+});
+addEventListener('pointerup', e => {
+  if (drag && drag.moved < 5 && S.ripple) { ripples.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (ripples.length > 4) ripples.shift(); }
+  ptr.down = false; drag = null;
+});
+addEventListener('wheel', e => { if (e.target !== cv) return; e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.03 : 0.0018))); }, { passive: false });
+addEventListener('dblclick', e => { if (e.target !== cv) return; if (tgt.z > 1.01) { tgt.z = 1; tgt.cx = W / 2; tgt.cy = H / 2; } else zoomAt(e.clientX, e.clientY, 2.5); });
+const pill = document.getElementById('zoomPill') as HTMLButtonElement; let pillTxt = '';
+pill.onclick = () => { tgt.z = 1; tgt.cx = W / 2; tgt.cy = H / 2; };
+function stepView(dt: number) {
+  const k = S.smooth ? 1 - Math.exp(-dt * 14) : 1;
+  if (Math.abs(tgt.z - view.z) > 0.0005 || Math.abs(tgt.cx - view.cx) > 0.05 || Math.abs(tgt.cy - view.cy) > 0.05) zoomedAt = performance.now();
+  view.z += (tgt.z - view.z) * k; view.cx += (tgt.cx - view.cx) * k; view.cy += (tgt.cy - view.cy) * k; clampView(view);
+  const txt = view.z > 1.02 ? view.z.toFixed(1) + 'x' : '';
+  if (txt !== pillTxt) { pillTxt = txt; pill.hidden = !txt; pill.textContent = txt + ' · reset'; }
+  cv.style.cursor = view.z > 1.01 ? (drag && drag.moved > 3 ? 'grabbing' : 'grab') : '';
+  const want = view.z < 1.5 ? 1 : view.z < 3 ? 2 : 4;                  // re-rasterise glyphs sharper once zoom settles
+  if (want !== rs && performance.now() - zoomedAt > 250) { rs = want; rebuild(); }
+}
 document.addEventListener('pointerleave', () => ptr.on = false);
 
 /* ---------------------------------------------------------------- frame */
@@ -95,6 +131,7 @@ function frame(now: number) {
     if (frames === 90) { if (slow / 90 > 24 && qEff > 1) { qEff--; qCeil = qEff; resize(); } slow = 0; frames = 0; }
   }
   ptr.press += ((ptr.down ? 1 : 0) - ptr.press) * Math.min(1, dt * 8);
+  stepView(dt);
 
   if (ptr.on && now - lastSample > 40) { trail.unshift({ x: ptr.x, y: ptr.y, t: now }); lastSample = now; if (trail.length > 11) trail.pop(); }
   trailU.fill(0); for (let i = 0; i < 12; i++) trailU[i * 3 + 2] = -1;
@@ -116,7 +153,7 @@ function frame(now: number) {
 }
 function makeFrame(time: number, now: number, sp: number, sweepOn: number): Frame {
   return {
-    time, cols, rows, cw, ch, offX, offY, drift: S.drift && !img && now - morphStart > 900, wave: gif ? 0 : 1, morph: gif ? Math.min(3, (now - morphStart) / Math.min(gif.delays[gif.i] * 0.7, 140) * 0.8) : Math.min(3, (now - morphStart) / 1000 * 3.5),
+    time, cols, rows, cw, ch, offX, offY, view: [view.cx, view.cy, view.z] as [number, number, number], drift: S.drift && !img && now - morphStart > 900, wave: gif ? 0 : 1, morph: gif ? Math.min(3, (now - morphStart) / Math.min(gif.delays[gif.i] * 0.7, 140) * 0.8) : Math.min(3, (now - morphStart) / 1000 * 3.5),
     radius: S.radius * (1 + 0.5 * ptr.press), push: S.push, hover: S.hover, trail: trailU, rip: ripU, sweep: [sp, sweepOn],
     base: S.color === 'accent' ? hex(S.accent) : [0.839, 0.843, 0.855], hi: S.color === 'accent' ? [1, 1, 1] : [0.957, 0.957, 0.965],
   };
@@ -141,7 +178,7 @@ async function decodeGif(file: File) {
 async function loadFile(file: File) {
   if (!file.type.startsWith('image/')) return toast('That is not an image file');
   try {
-    stopGif();
+    stopGif(); textMode = false; clearTextInput();
     if (file.type === 'image/gif' && 'ImageDecoder' in window) {
       const g = await decodeGif(file);
       if (g.frames.length > 1) { gif = { ...g, i: 0, next: performance.now() + g.delays[0] }; img = g.frames[0]; }
@@ -174,7 +211,7 @@ function exporter(ref: ImageBitmap, size: number, upscale: boolean) {
     tc, EW, EH,
     render(src: ImageBitmap) {
       const sc = buildScene(EW, EH, efs, a, 1, null, src, 100000); tr.setInstances(sc.data, sc.N);
-      tr.draw({ ...makeFrame(0, performance.now(), 0, 0), cols: sc.cols, rows: sc.rows, cw: sc.cw, ch: sc.ch, offX: sc.offX, offY: sc.offY, drift: false, morph: 3, wave: 1, hover: false });
+      tr.draw({ ...makeFrame(0, performance.now(), 0, 0), cols: sc.cols, rows: sc.rows, cw: sc.cw, ch: sc.ch, offX: sc.offX, offY: sc.offY, drift: false, morph: 3, wave: 1, hover: false, view: [EW / 2, EH / 2, 1] });
     },
     dispose() { tr.gl.getExtension('WEBGL_lose_context')?.loseContext(); },
   };
@@ -196,6 +233,22 @@ async function exportGif() {
     enc.finish(); ex.dispose(); save_blob(new Blob([enc.bytes()], { type: 'image/gif' }), 'gif'); toast(`Exported ${ex.EW} x ${ex.EH} GIF`);
   } catch { toast('GIF export failed'); } finally { encoding = false; }
 }
+/** Text is rendered white-on-transparent and goes through the same pipeline as an image. */
+function renderText(t: string) {
+  const c = document.createElement('canvas'), x = c.getContext('2d')!; let size = 320;
+  const font = () => `800 ${size}px ${FONT}`;
+  x.font = font(); let w = x.measureText(t).width; if (w > 7000) { size = Math.floor(size * 7000 / w); x.font = font(); w = x.measureText(t).width; }
+  c.width = Math.ceil(w + size * 0.5); c.height = Math.ceil(size * 1.5);
+  x.font = font(); x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(t, c.width / 2, c.height / 2);
+  return c;
+}
+async function setText(t: string) {
+  if (!t) { if (textMode) clearSource(); return; }
+  stopGif(); const c = renderText(t); setImage(await createImageBitmap(c)); textMode = true;
+  if (thumbUrl) { URL.revokeObjectURL(thumbUrl); thumbUrl = ''; }
+  imageShown(`\u201c${t}\u201d`, c.toDataURL()); setAnimated(false); rebuild();
+}
+function clearSource() { stopGif(); setAnimated(false); img?.close(); img = null; textMode = false; clearTextInput(); imageShown(null); rebuild(); }
 let recent: RecentItem[] = [];
 async function refreshRecent() {
   recent = await listRecent();
@@ -208,7 +261,7 @@ initUI({
     const a = W / img.width, b = H / img.height;
     S.scale = mode === 'fit' ? 1 : Math.min(3, Math.max(a, b) / Math.min(a, b)); sync('scale'); persist(); rebuild();
   },
-  clear() { stopGif(); setAnimated(false); img?.close(); img = null; imageShown(null); rebuild(); },
+  clear: clearSource, text: setText,
   reset() { resetSettings(); if (reduced) { S.drift = false; S.sweep = false; } sync(); persist(); rebuild(); toast('Settings reset'); },
   save() {
     const now = performance.now();

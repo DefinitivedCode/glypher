@@ -30,6 +30,8 @@ Everything runs in your browser, so your images never leave your device.
 - **Reactive background.** Glyphs light up and push away from your cursor, ripple when clicked, drift on their own, and a light sweep crosses the page. All of it is optional.
 - **Image to glyphs.** Each region of your image is matched to a character with the right amount of ink, so bright areas use dense glyphs and dark areas use sparse ones.
 - **Animated GIFs** play as real animations, with glyphs crossfading between frames.
+- **Type text** and it appears at the center, rendered in glyphs.
+- **Zoom in** with the scroll wheel (or pinch on a trackpad) and drag to pan. Double-click to zoom or reset. The full canvas is the widest view, so there is no zooming out past it.
 - **Recent images.** The last five images you used are kept in your browser (IndexedDB, never uploaded) so you can switch back in one click. Clear them any time.
 - **Export** a PNG at the image's native resolution, or an animated GIF.
 - **Customisable.** Scripts, glyph size, spacing, weight, contrast, sharpening, color modes (mono, accent, duotone, image colors) and more. Settings are remembered in your browser.
