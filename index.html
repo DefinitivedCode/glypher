@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glypher</title>
+<meta name="description" content="An interactive canvas of Korean, Japanese and Traditional Chinese glyphs. Drop in an image or GIF and it is rebuilt out of characters.">
+<meta name="theme-color" content="#141516">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Glypher">
+<meta property="og:description" content="Turn images and GIFs into interactive CJK glyph art.">
+<meta property="og:url" content="https://glyph.masonmau.com/">
+<meta name="twitter:card" content="summary">
+</head>
+<body>
+<canvas id="bg" role="img" aria-label="Interactive field of Korean, Japanese and Chinese glyphs"></canvas>
+<noscript><p style="padding:24px">Glypher needs JavaScript and WebGL2.</p></noscript>
+<div class="hint" id="hint" role="button" tabindex="0">
+  <svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>
+  <span>Customize</span><kbd>Ctrl K</kbd>
+</div>
+
+<aside class="panel" id="panel" aria-label="Glyph settings" aria-hidden="true">
+  <div class="head">
+    <h1>Glyph Canvas</h1>
+    <button class="btn icon" id="close" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="scroll" id="scroll">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose or drop an image">
+      <svg class="i" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 15V3m0 0 4 4m-4-4L8 7M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+      <div>Drop an image, paste, or click</div>
+      <small>PNG, JPG, WebP, SVG, GIF</small>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden>
+    <div class="thumb" id="thumb"><img id="thumbImg" alt=""><span id="thumbName"></span>
+      <button class="btn icon" id="clearImg" aria-label="Remove image"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+    </div>
+    <div id="groups"></div>
+  </div>
+  <div class="foot">
+    <button class="btn" id="reset">Reset</button>
+    <button class="btn" id="saveGif" hidden>Export GIF</button>
+    <button class="btn" id="save"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Export PNG</button>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

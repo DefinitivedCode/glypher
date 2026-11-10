@@ -1,0 +1,42 @@
+{
+  "name": "glypher",
+  "version": "0.1.0",
+  "description": "Interactive CJK glyph canvas background (WebGL2)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:dry": "npm run build && wrangler deploy --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DefinitivedCode/glypher.git"
+  },
+  "keywords": [
+    "webgl2",
+    "canvas",
+    "glyphs",
+    "cjk",
+    "ascii-art",
+    "image-to-text",
+    "creative-coding"
+  ],
+  "author": "DefinitivedCode",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DefinitivedCode/glypher/issues"
+  },
+  "homepage": "https://glyph.masonmau.com",
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7",
+    "wrangler": "^4.160.0"
+  },
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "gifenc": "^1.0.3"
+  }
+}
