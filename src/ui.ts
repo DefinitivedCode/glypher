@@ -34,6 +34,7 @@ const SPEC: [string, any[]][] = [
   ]],
   ['Performance', [
     { k: 'quality', label: 'Quality', min: 0, max: 5, step: 1, fmt: v => ['Auto', 'Lowest', 'Low', 'Medium', 'High', 'Ultra'][v], rebuild: 'quality' },
+    { k: 'smooth', label: 'Smooth transitions', toggle: true },
   ]],
   ['Motion', [
     { k: 'hover', label: 'Cursor glow', toggle: true },

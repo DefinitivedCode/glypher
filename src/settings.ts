@@ -4,7 +4,7 @@ export const DEFAULTS = {
   ambient: 0.16, color: 'mono', accent: '#0a84ff',
   hover: true, radius: 150, push: true, ripple: false, drift: false, sweep: false,
   scale: 0.9, contrast: 1.15, brightness: 0, invert: false, bgDim: 0.35,
-  auto: true, sharpen: 0.8, quality: 0,
+  auto: true, sharpen: 0.8, quality: 0, smooth: true,
   mapping: 'mixed', accent2: '#bf5af2', vibrance: 0.8, sweepSpeed: 0.5,
 };
 export type Settings = typeof DEFAULTS;

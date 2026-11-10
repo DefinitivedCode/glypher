@@ -62,7 +62,7 @@ function rebuild() {
   const sameSets = sk === setsKey; setsKey = sk;
   const sc = buildScene(W, H, fs, atlas, S.scale, sameSets ? { home: prevHome, tone: prevTone } : null, img);
   ({ cols, rows, N, cw, ch, offX, offY } = sc); prevHome = sc.home; prevTone = sc.tone;
-  morphStart = sc.changed ? performance.now() : -1e9;
+  morphStart = sc.changed && S.smooth ? performance.now() : -1e9;
   renderer.setInstances(sc.data, N);
 }
 
@@ -85,7 +85,7 @@ document.addEventListener('pointerleave', () => ptr.on = false);
 const trailU = new Float32Array(36), ripU = new Float32Array(16);
 let sweepAt = performance.now() + 3000, sweepStart = 0, last = performance.now();
 const t0 = performance.now();
-let slow = 0, frames = 0;
+let slow = 0, frames = 0, lostAt = 0, lastPtr: { x: number; y: number } | null = null;
 function frame(now: number) {
   requestAnimationFrame(frame);
   const raw = now - last, dt = Math.min(0.05, raw / 1000); last = now;
@@ -97,7 +97,9 @@ function frame(now: number) {
 
   if (ptr.on && now - lastSample > 40) { trail.unshift({ x: ptr.x, y: ptr.y, t: now }); lastSample = now; if (trail.length > 11) trail.pop(); }
   trailU.fill(0); for (let i = 0; i < 12; i++) trailU[i * 3 + 2] = -1;
-  if (ptr.on) { trailU.set([ptr.x, ptr.y, 0], 0); trail.forEach((p, i) => { const age = (now - p.t) / 1000; if (age < 1.5) trailU.set([p.x, p.y, age], (i + 1) * 3); }); }
+  if (ptr.on) { lastPtr = { x: ptr.x, y: ptr.y }; lostAt = 0; } else if (!lostAt) lostAt = now;
+  const fading = !ptr.on && S.smooth && lastPtr && (now - lostAt) / 1000 < 1.5;   // pointer left: let the glow fade out instead of cutting
+  if (ptr.on || fading) { trailU.set([lastPtr!.x, lastPtr!.y, ptr.on ? 0 : (now - lostAt) / 1000], 0); trail.forEach((p, i) => { const age = (now - p.t) / 1000; if (age < 1.5) trailU.set([p.x, p.y, age], (i + 1) * 3); }); }
 
   while (ripples.length && now - ripples[0].t > 2600) ripples.shift();
   ripU.fill(0); ripples.forEach((r, i) => ripU.set([r.x, r.y, (now - r.t) / 1000, 1], i * 4));
@@ -113,7 +115,7 @@ function frame(now: number) {
 }
 function makeFrame(time: number, now: number, sp: number, sweepOn: number): Frame {
   return {
-    time, cols, rows, cw, ch, offX, offY, drift: S.drift && !img, wave: gif ? 0 : 1, morph: gif ? Math.min(3, (now - morphStart) / Math.min(gif.delays[gif.i] * 0.7, 140) * 0.8) : Math.min(3, (now - morphStart) / 1000 * 3.5),
+    time, cols, rows, cw, ch, offX, offY, drift: S.drift && !img && now - morphStart > 900, wave: gif ? 0 : 1, morph: gif ? Math.min(3, (now - morphStart) / Math.min(gif.delays[gif.i] * 0.7, 140) * 0.8) : Math.min(3, (now - morphStart) / 1000 * 3.5),
     radius: S.radius * (1 + 0.5 * ptr.press), push: S.push, hover: S.hover, trail: trailU, rip: ripU, sweep: [sp, sweepOn],
     base: S.color === 'accent' ? hex(S.accent) : [0.839, 0.843, 0.855], hi: S.color === 'accent' ? [1, 1, 1] : [0.957, 0.957, 0.965],
   };
@@ -199,7 +201,7 @@ initUI({
     const a = W / img.width, b = H / img.height;
     S.scale = mode === 'fit' ? 1 : Math.min(3, Math.max(a, b) / Math.min(a, b)); sync('scale'); persist(); rebuild();
   },
-  clear() { stopGif(); setAnimated(false); img?.close(); img = null; imageShown(null); prevHome = new Float32Array(0); rebuild(); },
+  clear() { stopGif(); setAnimated(false); img?.close(); img = null; imageShown(null); rebuild(); },
   reset() { resetSettings(); if (reduced) { S.drift = false; S.sweep = false; } sync(); persist(); rebuild(); toast('Settings reset'); },
   save() {
     const now = performance.now();
